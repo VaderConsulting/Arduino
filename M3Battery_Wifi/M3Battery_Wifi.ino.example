@@ -1,0 +1,292 @@
+#include <SoftwareSerial.h>
+#include <ESP8266WiFi.h>
+
+SoftwareSerial OutputPort(7, 8); // RX, TX
+
+const int RedLED = 4;            // Low SoC indicator
+const int GreenLED = 5;          // Charged indicator
+const int OrangeLED = 6;         // Charging indicator
+const bool ActiveHigh = true;    // Set false if you expect to light LED with a '0'
+const long ReadSpeed = 115200;   // As specified by EVTV controller
+const long WriteSpeed = 38400;   // 
+const int StartCharge = 15;      // Percent
+const int EndCharge = 80;        // Percent
+const char* SOCString = "SOC:";  
+const byte numChars = 100;       // Max number of characters per line
+char receivedChars[numChars];    // an array to store the received data
+
+// Network SSID
+const char* ssid = "Outer_Rim";
+const char* password = "REDACTED";
+
+boolean newData = false;
+int SOC = 0;
+int PreviousSOC = 0;
+boolean Charging = false;
+
+void setup() 
+{
+    pinMode(RedLED, OUTPUT);
+    pinMode(GreenLED, OUTPUT);
+    pinMode(OrangeLED, OUTPUT);
+
+    OutputPort.begin(WriteSpeed);
+    
+    // Connect WiFi
+    OutputPort.println();
+    OutputPort.println();
+    OutputPort.print("Connecting to ");
+    OutputPort.println(ssid);
+    WiFi.hostname("Name");
+    WiFi.begin(ssid, password);
+ 
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        OutputPort.print(".");
+    }
+    OutputPort.println("");
+    OutputPort.println("WiFi connected");
+ 
+    // Print the IP address
+    OutputPort.print("IP address: ");
+    OutputPort.print(WiFi.localIP());
+
+    
+    Serial.begin(ReadSpeed);
+    while (!Serial) 
+    {
+        ;// wait for serial port to connect. Needed for Native USB only
+    }
+    
+    OutputPort.println("M3Battery    redacted@example.com    28 Feb 2022    v1.0  ");
+    OutputPort.println("==================================================================");
+}
+
+void loop() 
+{
+    Serial.begin(ReadSpeed);
+    while (!Serial) 
+    {
+        ;// wait for serial port to connect. Needed for Native USB only
+    }
+    // set the data rate for the SoftwareSerial port
+    OutputPort.begin(WriteSpeed);
+       
+    recvWithEndMarker();
+    showNewData();
+}
+
+void recvWithEndMarker() 
+{
+    static byte ndx = 0;
+    char endMarker = '\n';
+    char rc;
+ 
+    while (Serial.available() > 0 && newData == false) 
+    {
+        rc = Serial.read();
+    
+        if (rc != endMarker) 
+        {
+            receivedChars[ndx] = rc;
+            ndx++;
+            if (ndx >= numChars) 
+            {
+                ndx = numChars - 1;
+            }
+        }
+        else
+        {
+             receivedChars[ndx] = '\0'; // terminate the string
+             ndx = 0;
+             newData = true;
+        }
+    }
+}
+
+void showNewData() 
+{
+    if (newData == true) 
+    {
+        char * p;
+        
+        p = strstr (receivedChars, SOCString);
+
+        if (p)
+        {
+            int startpos = 0;
+
+            PreviousSOC = SOC;
+
+            startpos = p - receivedChars + 4;
+            SOC = atoi( &receivedChars[startpos] );
+
+            DetermineChargeStatus();
+        }
+        newData = false;
+    }
+}
+
+void DetermineChargeStatus()
+{
+    bool LowSoC = false;
+    bool HighSoC = false;
+    
+    // Reset indicator LED's
+    if (ActiveHigh == true)
+    {
+        digitalWrite(GreenLED, LOW);
+        digitalWrite(OrangeLED, LOW);
+        digitalWrite(RedLED, LOW);
+    }
+    else
+    {
+        digitalWrite(GreenLED, HIGH);
+        digitalWrite(OrangeLED, HIGH);
+        digitalWrite(RedLED, HIGH);
+    }
+    
+    if (PreviousSOC < SOC)
+    {
+        if (millis() < 10000)
+        {
+            // This indicates the Arduino has just started up
+            OutputPort.println("No previous battery SoC");
+        }
+        else
+        {
+            OutputPort.println("Battery SoC is increasing");
+        }
+
+        switch (SOC)
+        {
+            case EndCharge + 6 ... 100:
+                LowSoC = false;
+                HighSoC = true;
+                Charging = false;
+            break;
+            case EndCharge ... EndCharge + 5:
+                LowSoC = false;
+                HighSoC = true;
+                Charging = false;
+            break;
+            case StartCharge + 6 ... EndCharge - 1:
+                LowSoC = false;
+                HighSoC = false;
+                
+                //Don't change the charge state
+            break;
+            case StartCharge ... StartCharge + 5:
+                Charging = true;
+                LowSoC = true;
+                HighSoC = false;
+            break;
+            case 0 ... StartCharge - 1:
+                Charging = true;
+                LowSoC = true;
+                HighSoC = false;
+            break;
+            default:
+                // Should never get here
+                OutputPort.println("UNHANDLED CASE 1");
+                break;
+        }
+    }
+    else if (PreviousSOC > SOC)
+    {
+        OutputPort.println("Battery SoC is decreasing");
+
+        switch (SOC)
+        {
+            case EndCharge + 6 ... 100:
+                LowSoC = false;
+                HighSoC = true;
+                
+                //Don't change the charge state
+            break;
+            case EndCharge ... EndCharge + 5:
+                LowSoC = false;
+                HighSoC = true;
+                
+                //Don't change the charge state
+            break;
+            case StartCharge + 6 ... EndCharge - 1:
+                LowSoC = false;
+                HighSoC = false;
+                
+                //Don't change the charge state
+            break;
+            case StartCharge ... StartCharge + 5:
+                Charging = true;
+                LowSoC = true;
+                HighSoC = false;
+            break;
+            case 0 ... StartCharge - 1:
+                Charging = true;
+                LowSoC = true;
+                HighSoC = false;
+            break;
+            default:
+                // Should never get here
+                OutputPort.println("UNHANDLED CASE 2");
+                break;
+        }
+    }
+    else
+    {
+        OutputPort.println("Battery SoC is stable");
+    }
+
+    if (LowSoC == true)
+    {
+        if (ActiveHigh == true)
+        {
+            digitalWrite(RedLED, HIGH);
+        }
+        else
+        {
+            digitalWrite(RedLED, LOW);
+        }
+    }
+    
+    if (HighSoC == true)
+    {
+        if (ActiveHigh == true)
+        {
+            digitalWrite(GreenLED, HIGH);
+        }
+        else
+        {
+            digitalWrite(GreenLED, LOW);
+        }
+    }
+    
+    if (Charging == true)
+    {
+        if (ActiveHigh == true)
+        {
+            digitalWrite(OrangeLED, HIGH);
+        }
+        else
+        {
+            digitalWrite(OrangeLED, LOW);
+        }
+    }
+
+    WriteStatusAndPause();
+}
+
+void WriteStatusAndPause()
+{
+    OutputPort.print("SOC: "); OutputPort.print(SOC);
+    OutputPort.print("% (Charging="); OutputPort.print((boolean)Charging);
+    OutputPort.println(")");
+
+    OutputPort.println("Ending serial comms");
+    Serial.end();
+    OutputPort.end();
+    OutputPort.println("Sleeping for 30 seconds...");
+    OutputPort.println("------------------------------------------------------------------");
+    delay(30000);
+}
