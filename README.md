@@ -2,6 +2,7 @@
 
 Combined Arduino archive: Dave Robinson's sketches (clocks, Model 3 battery SOC LEDs, thermistor, HID joystick stub, I2C scanner) plus the `libraries` working copies used to build them. Sketches target AVR and ESP8266 boards; libraries include Adafruit, SparkFun, Paul Stoffregen, Seeed, and others. Published so the whole bench tree can be browsed in one GitHub repo; individual sketches and libraries also exist as sibling repos.
 
+**Source last updated:** 2020-09-03  
 **Language:** C++ / Arduino  
 **Target:** Arduino AVR / ESP8266 and related cores  
 **Output:** sketches and libraries
