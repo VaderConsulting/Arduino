@@ -24,6 +24,11 @@ Combined Arduino archive: Dave Robinson's sketches (clocks, Model 3 battery SOC 
 
 Open any `*.ino` in the Arduino IDE. Visual Micro users can open `HID_Joystick/HID_Joystick.vcxproj` or `OLEDClock/OLED_Clock/OLED_Clock.vcxproj` in Visual Studio.
 
+## Requirements
+
+- Arduino IDE
+- Visual Studio 2010 or later
+
 ## Attribution and provenance
 
 Dave Robinson / VaderConsulting sketches plus third-party Arduino libraries kept as working copies. Nick Gammon wrote `I2CScanner`. Library authors are named in each `libraries/*/library.properties`. See `THIRD_PARTY_NOTICES.md`.
