@@ -31,6 +31,7 @@ Open any `*.ino` in the Arduino IDE. Visual Micro users can open `HID_Joystick/H
 
 ## Attribution and provenance
 
+Working copy from my Historical Dev folder `Arduino`.
 Dave Robinson / VaderConsulting sketches plus third-party Arduino libraries kept as working copies. Nick Gammon wrote `I2CScanner`. Library authors are named in each `libraries/*/library.properties`. See `THIRD_PARTY_NOTICES.md`.
 
 ## License
