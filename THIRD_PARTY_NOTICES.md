@@ -4,7 +4,7 @@ This combined tree includes third-party Arduino libraries and Nick Gammon's I2C 
 
 ### Sketches
 - `I2CScanner` — Nick Gammon (2011).
-- Other sketches — Dave Robinson / VaderConsulting.
+- Other sketches — Dave Robinson / Vader Consulting.
 
 ### Libraries (working copies)
 - `Adafruit_BusIO` — Adafruit: This is a library for abstracting away UART, I2C and SPI interfacing
@@ -40,4 +40,4 @@ This combined tree includes third-party Arduino libraries and Nick Gammon's I2C 
 - `WaveHC` — William Greiman: WaveHC wave shield library
 - `arduino_644462` — Seeed Studio: Arduino library to control Grove_4Digital_Display TM1637.
 
-VaderConsulting / Dave Robinson did not author the third-party library code.
+Vader Consulting / Dave Robinson did not author the third-party library code.
